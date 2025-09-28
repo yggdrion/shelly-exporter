@@ -1,0 +1,3 @@
+[files]
+# Exclude changelog from typos checking as it contains commit hashes and generated content
+extend-exclude = ["CHANGELOG.md"]
