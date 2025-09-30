@@ -12,11 +12,10 @@ jobs:
         run: |
           title="${{ github.event.pull_request.title }}"
           echo "Checking PR title: $title"
-
-          if [[ ! "$title" =~ ^(feat|fix|chore|docs|refactor|test|perf|build|ci):\  ]]; then
-            echo "❌ PR title must start with a GitVersion prefix (e.g. 'feat: ', 'fix: ')"
+          pattern='^(feat|fix|chore|docs|refactor|test|perf|build|ci)(\([^)]+\))?:\ '
+          if [[ ! "$title" =~ $pattern ]]; then
+            echo "❌ PR title must start with a GitVersion prefix (e.g. 'feat: ', 'fix: ', 'feat(scope): ')"
             echo "Your PR title was: \"$title\""
             exit 1
           fi
-
           echo "✅ PR title follows GitVersion naming conventions"
