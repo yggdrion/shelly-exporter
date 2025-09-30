@@ -18,9 +18,7 @@
                 "github-actions"
             ],
             "groupName": "github-actions",
-            "commitMessagePrefix": "chore(github-actions): ",
-            "pinDigests": true,
-            "digestOneAndOnly": true
+            "commitMessagePrefix": "chore(github-actions): "
         },
         {
             "matchManagers": [
