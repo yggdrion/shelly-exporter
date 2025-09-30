@@ -1,7 +1,8 @@
 {
     "extends": [
         "config:recommended",
-        ":dependencyDashboard"
+        ":dependencyDashboard",
+        "helpers:pinGitHubActionDigests"
     ],
     "schedule": [],
     "assignees": [
@@ -17,7 +18,9 @@
                 "github-actions"
             ],
             "groupName": "github-actions",
-            "commitMessagePrefix": "chore(github-actions): "
+            "commitMessagePrefix": "chore(github-actions): ",
+            "pinDigests": true,
+            "digestOneAndOnly": true
         },
         {
             "matchManagers": [
