@@ -1,0 +1,30 @@
+{
+    "extends": [
+        "config:recommended",
+        ":dependencyDashboard"
+    ],
+    "schedule": [],
+    "assignees": [
+        "r4b2"
+    ],
+    "labels": [
+        "dependencies"
+    ],
+    "semanticCommits": "enabled",
+    "packageRules": [
+        {
+            "matchManagers": [
+                "github-actions"
+            ],
+            "groupName": "github-actions",
+            "commitMessagePrefix": "chore(github-actions): "
+        },
+        {
+            "matchManagers": [
+                "gomod"
+            ],
+            "groupName": "go",
+            "commitMessagePrefix": "chore(go): "
+        }
+    ]
+}
