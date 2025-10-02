@@ -2,7 +2,8 @@
     "extends": [
         "config:recommended",
         ":dependencyDashboard",
-        "helpers:pinGitHubActionDigests"
+        "helpers:pinGitHubActionDigests",
+        ":semanticCommits"
     ],
     "schedule": [],
     "assignees": [
@@ -12,20 +13,79 @@
         "dependencies"
     ],
     "semanticCommits": "enabled",
+    "recreateWhen": "always",
+    "recreateClosed": true,
+    "separateMajorMinor": false,
     "packageRules": [
         {
             "matchManagers": [
                 "github-actions"
             ],
             "groupName": "github-actions",
-            "commitMessagePrefix": "chore(github-actions): "
+            "commitMessagePrefix": "chore(github-actions): ",
+            "pinDigests": true,
+            "labels": [
+                "dependencies",
+                "github-actions"
+            ]
+        },
+        {
+            "matchManagers": [
+                "terraform"
+            ],
+            "groupName": "terraform",
+            "commitMessagePrefix": "chore(terraform): ",
+            "labels": [
+                "dependencies",
+                "terraform"
+            ]
         },
         {
             "matchManagers": [
                 "gomod"
             ],
             "groupName": "go",
-            "commitMessagePrefix": "chore(go): "
+            "commitMessagePrefix": "chore(go): ",
+            "labels": [
+                "dependencies",
+                "go"
+            ]
+        },
+        {
+            "matchManagers": [
+                "npm"
+            ],
+            "groupName": "npm",
+            "commitMessagePrefix": "chore(npm): ",
+            "labels": [
+                "dependencies",
+                "npm"
+            ]
+        },
+        {
+            "matchManagers": [
+                "pip_requirements"
+            ],
+            "groupName": "python",
+            "commitMessagePrefix": "chore(python): ",
+            "labels": [
+                "dependencies",
+                "python"
+            ]
+        },
+        {
+            "matchManagers": [
+                "docker-compose"
+            ],
+            "matchFileNames": [
+                "**/docker-compose.yml"
+            ],
+            "groupName": "docker-compose",
+            "commitMessagePrefix": "chore(docker-compose): ",
+            "labels": [
+                "dependencies",
+                "docker"
+            ]
         }
     ]
 }
