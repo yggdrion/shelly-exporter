@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/yggdrion/shelly-exporter/compare/v1.0.2...v1.0.3) (2025-10-03)
+
+### Bug Fixes
+
+* add github-action versions ([b670c99](https://github.com/yggdrion/shelly-exporter/commit/b670c99c8ab89f92d3ad9480774189d7795ea441))
+* missing ga version ([5285ec5](https://github.com/yggdrion/shelly-exporter/commit/5285ec5b42b9c7c6825470da5ab438d48de75ba0))
+* universal renovate config ([567a598](https://github.com/yggdrion/shelly-exporter/commit/567a598cac19cc5eed6c9e870750c07efb9e835b))
+
 ## [1.0.2](https://github.com/yggdrion/shelly-exporter/compare/v1.0.1...v1.0.2) (2025-09-30)
 
 ### Bug Fixes
