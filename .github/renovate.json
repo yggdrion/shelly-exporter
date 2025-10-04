@@ -5,7 +5,9 @@
         "helpers:pinGitHubActionDigests",
         ":semanticCommits"
     ],
-    "schedule": [],
+    "schedule": [
+        "every saturday at 10:00"
+    ],
     "assignees": [
         "r4b2"
     ],
