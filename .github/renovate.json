@@ -6,7 +6,7 @@
         ":semanticCommits"
     ],
     "schedule": [
-        "every saturday at 10:00"
+        "on saturday"
     ],
     "assignees": [
         "r4b2"
