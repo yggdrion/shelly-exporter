@@ -107,15 +107,14 @@ func (e *ShellyExporter) Collect(ch chan<- prometheus.Metric) {
 	e.powerGauge.Collect(ch)
 }
 
-// discoverDevices scans the network for Shelly devices and updates the known devices list
+// discoverDevices scans the network for Shelly devices and adds/updates the known devices list
 func (e *ShellyExporter) discoverDevices(ctx context.Context) {
-	// log.Printf("Starting device discovery scan...")
 	start := time.Now()
 
 	var wg sync.WaitGroup
-	foundDevices := 0
-	var foundMutex sync.Mutex
-	tempDevices := make(map[string]*ShellyDevice)
+	newDevices := 0
+	updatedDevices := 0
+	var countMutex sync.Mutex
 
 	// Get local network range
 	ips := e.getIPRange()
@@ -133,24 +132,37 @@ func (e *ShellyExporter) discoverDevices(ctx context.Context) {
 			}
 
 			if device := e.discoverShellyDevice(ipAddr); device != nil {
-				foundMutex.Lock()
-				foundDevices++
-				tempDevices[device.IP] = device
-				foundMutex.Unlock()
+				e.devicesMutex.Lock()
+				if existing, exists := e.knownDevices[device.IP]; exists {
+					// Update existing device
+					existing.DeviceName = device.DeviceName
+					existing.DeviceType = device.DeviceType
+					existing.LastSeen = device.LastSeen
+					e.devicesMutex.Unlock()
+					countMutex.Lock()
+					updatedDevices++
+					countMutex.Unlock()
+				} else {
+					// Add new device
+					e.knownDevices[device.IP] = device
+					e.devicesMutex.Unlock()
+					countMutex.Lock()
+					newDevices++
+					countMutex.Unlock()
+					log.Printf("Discovered new device: %s (%s) at %s", device.DeviceName, device.DeviceID, device.IP)
+				}
 			}
 		}(ip)
 	}
 
 	wg.Wait()
 
-	// Update known devices list
-	e.devicesMutex.Lock()
-	e.knownDevices = tempDevices
-	e.devicesMutex.Unlock()
+	e.devicesMutex.RLock()
+	totalDevices := len(e.knownDevices)
+	e.devicesMutex.RUnlock()
 
 	duration := time.Since(start).Seconds()
-
-	log.Printf("Device discovery completed in %.2f seconds, found %d Shelly devices", duration, foundDevices)
+	log.Printf("Device discovery completed in %.2f seconds, %d new, %d updated, %d total devices", duration, newDevices, updatedDevices, totalDevices)
 }
 
 // discoverShellyDevice checks if the given IP is a Shelly device and returns device info
@@ -267,21 +279,25 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 			default:
 			}
 
-			if power, ok := e.fetchShellyPower(dev.IP); ok {
-				metricsMutex.Lock()
-				collectedMetrics = append(collectedMetrics, metricData{
-					deviceID:   dev.DeviceID,
-					deviceName: dev.DeviceName,
-					deviceType: dev.DeviceType,
-					ip:         dev.IP,
-					power:      power,
-				})
-				metricsMutex.Unlock()
-
+			power, ok := e.fetchShellyPower(dev.IP)
+			if ok {
 				successMutex.Lock()
 				successCount++
 				successMutex.Unlock()
+			} else {
+				// Device unreachable, report 0 watts
+				power = 0
 			}
+
+			metricsMutex.Lock()
+			collectedMetrics = append(collectedMetrics, metricData{
+				deviceID:   dev.DeviceID,
+				deviceName: dev.DeviceName,
+				deviceType: dev.DeviceType,
+				ip:         dev.IP,
+				power:      power,
+			})
+			metricsMutex.Unlock()
 		}(device)
 	}
 
@@ -296,7 +312,7 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	e.mutex.Unlock()
 
 	duration := time.Since(start).Seconds()
-	log.Printf("Metrics collection completed in %.2f seconds, collected from %d/%d devices", duration, successCount, len(devices))
+	log.Printf("Metrics collection completed in %.2f seconds, reachable %d/%d devices", duration, successCount, len(devices))
 }
 
 // getIPRange returns a list of IP addresses in the local network range
