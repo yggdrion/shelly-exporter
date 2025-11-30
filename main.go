@@ -232,6 +232,7 @@ func (e *ShellyExporter) discoverShellyDevice(ip string) *ShellyDevice {
 			deviceName = deviceID // Fallback to device ID
 		} else {
 			// Try to get device name from various possible locations
+			// Root level name takes priority (most common location)
 			if settings.Name != "" {
 				deviceName = settings.Name
 			} else if settings.Device.Name != "" {
