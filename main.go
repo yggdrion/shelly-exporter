@@ -240,10 +240,16 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	// log.Printf("Collecting metrics from %d known devices...", len(devices))
 	start := time.Now()
 
-	e.mutex.Lock()
-	// Reset metrics
-	e.powerGauge.Reset()
-	e.mutex.Unlock()
+	// Collect all metrics first, then update the gauge atomically
+	type metricData struct {
+		deviceID   string
+		deviceName string
+		deviceType string
+		ip         string
+		power      float64
+	}
+	var collectedMetrics []metricData
+	var metricsMutex sync.Mutex
 
 	var wg sync.WaitGroup
 	successCount := 0
@@ -261,7 +267,17 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 			default:
 			}
 
-			if e.collectShellyMetrics(dev.IP, dev.DeviceID, dev.DeviceName, dev.DeviceType) {
+			if power, ok := e.fetchShellyPower(dev.IP); ok {
+				metricsMutex.Lock()
+				collectedMetrics = append(collectedMetrics, metricData{
+					deviceID:   dev.DeviceID,
+					deviceName: dev.DeviceName,
+					deviceType: dev.DeviceType,
+					ip:         dev.IP,
+					power:      power,
+				})
+				metricsMutex.Unlock()
+
 				successMutex.Lock()
 				successCount++
 				successMutex.Unlock()
@@ -270,6 +286,14 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	}
 
 	wg.Wait()
+
+	// Update all metrics atomically
+	e.mutex.Lock()
+	e.powerGauge.Reset()
+	for _, m := range collectedMetrics {
+		e.powerGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.power)
+	}
+	e.mutex.Unlock()
 
 	duration := time.Since(start).Seconds()
 	log.Printf("Metrics collection completed in %.2f seconds, collected from %d/%d devices", duration, successCount, len(devices))
@@ -310,13 +334,33 @@ func inc(ip net.IP) {
 
 // collectShellyMetrics collects metrics from a Shelly device using known device info
 func (e *ShellyExporter) collectShellyMetrics(ip, deviceID, deviceName, deviceType string) bool {
+	power, ok := e.fetchShellyPower(ip)
+	if !ok {
+		return false
+	}
+
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	e.powerGauge.WithLabelValues(
+		deviceID,
+		deviceName,
+		deviceType,
+		ip,
+	).Set(power)
+
+	return true
+}
+
+// fetchShellyPower fetches the power reading from a Shelly device
+func (e *ShellyExporter) fetchShellyPower(ip string) (float64, bool) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Get device status
 	statusResp, err := client.Get(fmt.Sprintf("http://%s/status", ip))
 	if err != nil {
 		log.Printf("Error getting status from %s: %v", ip, err)
-		return false
+		return 0, false
 	}
 	defer func() {
 		if err := statusResp.Body.Close(); err != nil {
@@ -327,26 +371,17 @@ func (e *ShellyExporter) collectShellyMetrics(ip, deviceID, deviceName, deviceTy
 	var status ShellyStatus
 	if err := json.NewDecoder(statusResp.Body).Decode(&status); err != nil {
 		log.Printf("Error decoding status from %s: %v", ip, err)
-		return false
+		return 0, false
 	}
 
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// Set power metrics for each meter
+	// Return power from first valid meter
 	for _, meter := range status.Meters {
 		if meter.IsValid {
-			e.powerGauge.WithLabelValues(
-				deviceID,
-				deviceName,
-				deviceType,
-				ip,
-			).Set(meter.Power)
+			return meter.Power, true
 		}
 	}
 
-	// log.Printf("Collected metrics from Shelly device %s ('%s', %s) at %s", deviceID, deviceName, deviceType, ip)
-	return true
+	return 0, false
 }
 
 // startPeriodicDiscovery starts the periodic device discovery
