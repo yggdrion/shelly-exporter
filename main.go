@@ -69,6 +69,7 @@ type ShellyDevice struct {
 // ShellyExporter implements prometheus.Collector
 type ShellyExporter struct {
 	powerGauge        *prometheus.GaugeVec
+	onlineGauge       *prometheus.GaugeVec
 	mutex             sync.RWMutex
 	devicesMutex      sync.RWMutex
 	knownDevices      map[string]*ShellyDevice
@@ -87,6 +88,13 @@ func NewShellyExporter(networkRange string, discoveryInterval, metricsInterval t
 			},
 			[]string{"device_id", "device_name", "device_type", "ip_address"},
 		),
+		onlineGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "shelly_online",
+				Help: "Whether the Shelly device is reachable (1 = online, 0 = offline)",
+			},
+			[]string{"device_id", "device_name", "device_type", "ip_address"},
+		),
 		knownDevices:      make(map[string]*ShellyDevice),
 		networkRange:      networkRange,
 		discoveryInterval: discoveryInterval,
@@ -97,6 +105,7 @@ func NewShellyExporter(networkRange string, discoveryInterval, metricsInterval t
 // Describe implements prometheus.Collector
 func (e *ShellyExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.powerGauge.Describe(ch)
+	e.onlineGauge.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
@@ -105,6 +114,7 @@ func (e *ShellyExporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.RUnlock()
 
 	e.powerGauge.Collect(ch)
+	e.onlineGauge.Collect(ch)
 }
 
 // discoverDevices scans the network for Shelly devices and adds/updates the known devices list
@@ -259,6 +269,7 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 		deviceType string
 		ip         string
 		power      float64
+		online     float64
 	}
 	var collectedMetrics []metricData
 	var metricsMutex sync.Mutex
@@ -280,13 +291,16 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 			}
 
 			power, ok := e.fetchShellyPower(dev.IP)
+			var online float64
 			if ok {
+				online = 1
 				successMutex.Lock()
 				successCount++
 				successMutex.Unlock()
 			} else {
-				// Device unreachable, report 0 watts
+				// Device unreachable, report 0 watts and offline
 				power = 0
+				online = 0
 			}
 
 			metricsMutex.Lock()
@@ -296,6 +310,7 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 				deviceType: dev.DeviceType,
 				ip:         dev.IP,
 				power:      power,
+				online:     online,
 			})
 			metricsMutex.Unlock()
 		}(device)
@@ -306,8 +321,10 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	// Update all metrics atomically
 	e.mutex.Lock()
 	e.powerGauge.Reset()
+	e.onlineGauge.Reset()
 	for _, m := range collectedMetrics {
 		e.powerGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.power)
+		e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.online)
 	}
 	e.mutex.Unlock()
 
