@@ -14,7 +14,7 @@ RUN go mod download
 COPY *.go ./
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o shelly-exporter main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o exporter main.go
 
 # Final stage
 FROM alpine:latest
@@ -25,10 +25,10 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 
 # Copy the binary from builder stage
-COPY --from=builder /app/shelly-exporter .
+COPY --from=builder /app/exporter .
 
 # Expose port
 EXPOSE 8080
 
 # Run the binary
-CMD ["./shelly-exporter"]
+CMD ["./exporter"]
