@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/yggdrion/shelly-exporter/compare/v1.1.0...v1.1.1) (2025-11-30)
+
+### Bug Fixes
+
+* remove unused function ([e82c08f](https://github.com/yggdrion/shelly-exporter/commit/e82c08ffeb7e753e897403c3e7a8181fc01c553b))
+
 ## [1.1.0](https://github.com/yggdrion/shelly-exporter/compare/v1.0.3...v1.1.0) (2025-11-30)
 
 ### Bug Fixes
