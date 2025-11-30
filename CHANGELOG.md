@@ -1,3 +1,19 @@
+## [1.1.0](https://github.com/yggdrion/shelly-exporter/compare/v1.0.3...v1.1.0) (2025-11-30)
+
+### Bug Fixes
+
+*  device discovery logging and metrics collection ([b69ba54](https://github.com/yggdrion/shelly-exporter/commit/b69ba545e3a4f208a74eba39f0dc130b95818a4a))
+* add online state ([46f5d0b](https://github.com/yggdrion/shelly-exporter/commit/46f5d0b4372247d780a26d41f97e9ce883aa96ed))
+* device name ([b99894f](https://github.com/yggdrion/shelly-exporter/commit/b99894fc0f92bffd3990bc37cf2056aa8b510ff2))
+* improve metrics collection and atomic updates ([321397e](https://github.com/yggdrion/shelly-exporter/commit/321397eef0cf53ee856925971101f0827e52f7f9))
+* more generic dockerfile ([c22b6e0](https://github.com/yggdrion/shelly-exporter/commit/c22b6e049bcd5777628268f36ea4112eb240f933))
+* renovate schedule ([3938feb](https://github.com/yggdrion/shelly-exporter/commit/3938feb605943638a4640a746528b8d535934a41))
+* renovate schedule ([7d2131c](https://github.com/yggdrion/shelly-exporter/commit/7d2131c3b0b531faf56ab6762ed301dde22ea388))
+
+### Features
+
+* add relay gauge ([a3ebdcd](https://github.com/yggdrion/shelly-exporter/commit/a3ebdcdd1a9cfc313ba223765e3e547901647930))
+
 ## [1.0.3](https://github.com/yggdrion/shelly-exporter/compare/v1.0.2...v1.0.3) (2025-10-03)
 
 ### Bug Fixes
