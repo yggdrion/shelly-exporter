@@ -70,6 +70,7 @@ type ShellyDevice struct {
 type ShellyExporter struct {
 	powerGauge        *prometheus.GaugeVec
 	onlineGauge       *prometheus.GaugeVec
+	relayGauge        *prometheus.GaugeVec
 	mutex             sync.RWMutex
 	devicesMutex      sync.RWMutex
 	knownDevices      map[string]*ShellyDevice
@@ -83,7 +84,7 @@ func NewShellyExporter(networkRange string, discoveryInterval, metricsInterval t
 	return &ShellyExporter{
 		powerGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "shelly_power_watts",
+				Name: "shelly_watts",
 				Help: "Current power consumption in watts from Shelly devices",
 			},
 			[]string{"device_id", "device_name", "device_type", "ip_address"},
@@ -92,6 +93,13 @@ func NewShellyExporter(networkRange string, discoveryInterval, metricsInterval t
 			prometheus.GaugeOpts{
 				Name: "shelly_online",
 				Help: "Whether the Shelly device is reachable (1 = online, 0 = offline)",
+			},
+			[]string{"device_id", "device_name", "device_type", "ip_address"},
+		),
+		relayGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "shelly_relay",
+				Help: "Whether the Shelly relay is switched on (1 = on, 0 = off)",
 			},
 			[]string{"device_id", "device_name", "device_type", "ip_address"},
 		),
@@ -106,6 +114,7 @@ func NewShellyExporter(networkRange string, discoveryInterval, metricsInterval t
 func (e *ShellyExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.powerGauge.Describe(ch)
 	e.onlineGauge.Describe(ch)
+	e.relayGauge.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
@@ -115,6 +124,7 @@ func (e *ShellyExporter) Collect(ch chan<- prometheus.Metric) {
 
 	e.powerGauge.Collect(ch)
 	e.onlineGauge.Collect(ch)
+	e.relayGauge.Collect(ch)
 }
 
 // discoverDevices scans the network for Shelly devices and adds/updates the known devices list
@@ -269,7 +279,8 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 		deviceType string
 		ip         string
 		power      float64
-		online     float64
+		online     bool
+		relayOn    float64
 	}
 	var collectedMetrics []metricData
 	var metricsMutex sync.Mutex
@@ -290,28 +301,25 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 			default:
 			}
 
-			power, ok := e.fetchShellyPower(dev.IP)
-			var online float64
-			if ok {
-				online = 1
-				successMutex.Lock()
-				successCount++
-				successMutex.Unlock()
-			} else {
-				// Device unreachable, report 0 watts and offline
-				power = 0
-				online = 0
-			}
-
-			metricsMutex.Lock()
-			collectedMetrics = append(collectedMetrics, metricData{
+			status, ok := e.fetchShellyStatus(dev.IP)
+			metric := metricData{
 				deviceID:   dev.DeviceID,
 				deviceName: dev.DeviceName,
 				deviceType: dev.DeviceType,
 				ip:         dev.IP,
-				power:      power,
-				online:     online,
-			})
+				online:     ok,
+			}
+
+			if ok {
+				metric.power = status.Power
+				metric.relayOn = status.RelayOn
+				successMutex.Lock()
+				successCount++
+				successMutex.Unlock()
+			}
+
+			metricsMutex.Lock()
+			collectedMetrics = append(collectedMetrics, metric)
 			metricsMutex.Unlock()
 		}(device)
 	}
@@ -322,9 +330,16 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	e.mutex.Lock()
 	e.powerGauge.Reset()
 	e.onlineGauge.Reset()
+	e.relayGauge.Reset()
 	for _, m := range collectedMetrics {
-		e.powerGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.power)
-		e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.online)
+		if m.online {
+			e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(1)
+			e.powerGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.power)
+			e.relayGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.relayOn)
+		} else {
+			e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(0)
+			// Don't report watts or relay state for offline devices
+		}
 	}
 	e.mutex.Unlock()
 
@@ -367,7 +382,7 @@ func inc(ip net.IP) {
 
 // collectShellyMetrics collects metrics from a Shelly device using known device info
 func (e *ShellyExporter) collectShellyMetrics(ip, deviceID, deviceName, deviceType string) bool {
-	power, ok := e.fetchShellyPower(ip)
+	status, ok := e.fetchShellyStatus(ip)
 	if !ok {
 		return false
 	}
@@ -380,20 +395,33 @@ func (e *ShellyExporter) collectShellyMetrics(ip, deviceID, deviceName, deviceTy
 		deviceName,
 		deviceType,
 		ip,
-	).Set(power)
+	).Set(status.Power)
+
+	e.relayGauge.WithLabelValues(
+		deviceID,
+		deviceName,
+		deviceType,
+		ip,
+	).Set(status.RelayOn)
 
 	return true
 }
 
-// fetchShellyPower fetches the power reading from a Shelly device
-func (e *ShellyExporter) fetchShellyPower(ip string) (float64, bool) {
+// ShellyMetrics holds the metrics fetched from a Shelly device
+type ShellyMetrics struct {
+	Power   float64
+	RelayOn float64
+}
+
+// fetchShellyStatus fetches metrics from a Shelly device
+func (e *ShellyExporter) fetchShellyStatus(ip string) (ShellyMetrics, bool) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Get device status
 	statusResp, err := client.Get(fmt.Sprintf("http://%s/status", ip))
 	if err != nil {
 		log.Printf("Error getting status from %s: %v", ip, err)
-		return 0, false
+		return ShellyMetrics{}, false
 	}
 	defer func() {
 		if err := statusResp.Body.Close(); err != nil {
@@ -404,17 +432,25 @@ func (e *ShellyExporter) fetchShellyPower(ip string) (float64, bool) {
 	var status ShellyStatus
 	if err := json.NewDecoder(statusResp.Body).Decode(&status); err != nil {
 		log.Printf("Error decoding status from %s: %v", ip, err)
-		return 0, false
+		return ShellyMetrics{}, false
 	}
 
-	// Return power from first valid meter
+	var metrics ShellyMetrics
+
+	// Get power from first valid meter
 	for _, meter := range status.Meters {
 		if meter.IsValid {
-			return meter.Power, true
+			metrics.Power = meter.Power
+			break
 		}
 	}
 
-	return 0, false
+	// Get relay state from first relay
+	if len(status.Relays) > 0 && status.Relays[0].IsOn {
+		metrics.RelayOn = 1
+	}
+
+	return metrics, true
 }
 
 // startPeriodicDiscovery starts the periodic device discovery
