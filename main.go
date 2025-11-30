@@ -381,33 +381,6 @@ func inc(ip net.IP) {
 	}
 }
 
-// collectShellyMetrics collects metrics from a Shelly device using known device info
-func (e *ShellyExporter) collectShellyMetrics(ip, deviceID, deviceName, deviceType string) bool {
-	status, ok := e.fetchShellyStatus(ip)
-	if !ok {
-		return false
-	}
-
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	e.powerGauge.WithLabelValues(
-		deviceID,
-		deviceName,
-		deviceType,
-		ip,
-	).Set(status.Power)
-
-	e.relayGauge.WithLabelValues(
-		deviceID,
-		deviceName,
-		deviceType,
-		ip,
-	).Set(status.RelayOn)
-
-	return true
-}
-
 // ShellyMetrics holds the metrics fetched from a Shelly device
 type ShellyMetrics struct {
 	Power   float64
