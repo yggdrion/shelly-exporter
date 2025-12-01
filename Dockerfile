@@ -1,34 +1,22 @@
-# Multi-stage build
-FROM golang:1.25-alpine AS builder
-
-# Install dependencies
-RUN apk add --no-cache git ca-certificates
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
-COPY *.go ./
+COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o exporter main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
-# Final stage
-FROM alpine:latest
+FROM alpine:3.21
 
-# Install runtime dependencies (ca-certificates for HTTPS API calls)
-RUN apk add --no-cache ca-certificates
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/exporter .
+COPY --from=builder /app/main .
 
-# Expose port
 EXPOSE 8080
 
-# Run the binary
-CMD ["./exporter"]
+CMD ["./main"]
