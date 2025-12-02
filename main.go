@@ -64,6 +64,7 @@ type ShellyDevice struct {
 	DeviceName string
 	DeviceType string
 	LastSeen   time.Time
+	LastOnline time.Time
 }
 
 // ShellyExporter implements prometheus.Collector
@@ -253,6 +254,7 @@ func (e *ShellyExporter) discoverShellyDevice(ip string) *ShellyDevice {
 		DeviceName: deviceName,
 		DeviceType: info.Type,
 		LastSeen:   time.Now(),
+		LastOnline: time.Now(),
 	}
 }
 
@@ -286,6 +288,10 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 	var collectedMetrics []metricData
 	var metricsMutex sync.Mutex
 
+	// Track stale devices (offline for more than 5 minutes)
+	staleThreshold := 3 * time.Minute
+	var staleDevices []string
+
 	var wg sync.WaitGroup
 	successCount := 0
 	var successMutex sync.Mutex
@@ -317,6 +323,11 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 				successMutex.Lock()
 				successCount++
 				successMutex.Unlock()
+
+				// Update last online time
+				e.devicesMutex.Lock()
+				dev.LastOnline = time.Now()
+				e.devicesMutex.Unlock()
 			}
 
 			metricsMutex.Lock()
@@ -327,11 +338,17 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 
 	wg.Wait()
 
-	// Update all metrics atomically
+	// Identify stale devices (offline for more than threshold)
+	e.devicesMutex.RLock()
+	for _, dev := range devices {
+		if !dev.LastOnline.IsZero() && time.Since(dev.LastOnline) > staleThreshold {
+			staleDevices = append(staleDevices, dev.IP)
+		}
+	}
+	e.devicesMutex.RUnlock()
+
+	// Update all metrics atomically - only update values, don't reset
 	e.mutex.Lock()
-	e.powerGauge.Reset()
-	e.onlineGauge.Reset()
-	e.relayGauge.Reset()
 	for _, m := range collectedMetrics {
 		if m.online {
 			e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(1)
@@ -339,8 +356,20 @@ func (e *ShellyExporter) collectMetricsFromKnownDevices(ctx context.Context) {
 			e.relayGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(m.relayOn)
 		} else {
 			e.onlineGauge.WithLabelValues(m.deviceID, m.deviceName, m.deviceType, m.ip).Set(0)
-			// Don't report watts or relay state for offline devices
+			// Keep last known watts and relay state for offline devices instead of clearing them
 		}
+	}
+
+	// Clean up metrics for stale devices
+	for _, ip := range staleDevices {
+		e.devicesMutex.RLock()
+		if dev, exists := e.knownDevices[ip]; exists {
+			e.powerGauge.DeleteLabelValues(dev.DeviceID, dev.DeviceName, dev.DeviceType, dev.IP)
+			e.onlineGauge.DeleteLabelValues(dev.DeviceID, dev.DeviceName, dev.DeviceType, dev.IP)
+			e.relayGauge.DeleteLabelValues(dev.DeviceID, dev.DeviceName, dev.DeviceType, dev.IP)
+			log.Printf("Removed stale metrics for device %s (%s) - offline for >5 minutes", dev.DeviceName, ip)
+		}
+		e.devicesMutex.RUnlock()
 	}
 	e.mutex.Unlock()
 
