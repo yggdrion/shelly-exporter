@@ -1,3 +1,17 @@
+## [1.1.2](https://github.com/yggdrion/shelly-exporter/compare/v1.1.1...v1.1.2) (2025-12-02)
+
+### 🐛 Bug Fixes
+
+* dockerimage ([f9dc7e9](https://github.com/yggdrion/shelly-exporter/commit/f9dc7e942e9c362262c71971c7448b2e50bee87f))
+* release config ([4e25af4](https://github.com/yggdrion/shelly-exporter/commit/4e25af4784169b2dce572e1a3eca8432aa8ea0f5))
+* timeouts ([8b83c71](https://github.com/yggdrion/shelly-exporter/commit/8b83c712a065929bf58973e8353a66798ec49299))
+
+### 🔧 Chores
+
+* **deps:** update alpine docker tag to v3.22 ([#19](https://github.com/yggdrion/shelly-exporter/issues/19)) ([8500756](https://github.com/yggdrion/shelly-exporter/commit/8500756a4aca34cb784ff548721bdb45e146fa0a))
+* **deps:** update golang docker tag to v1.25 ([#20](https://github.com/yggdrion/shelly-exporter/issues/20)) ([8873980](https://github.com/yggdrion/shelly-exporter/commit/8873980d24fa31da7e1f225c796598144fad9b4a))
+* **github-actions:** Update actions/checkout action to v6.0.1 ([#18](https://github.com/yggdrion/shelly-exporter/issues/18)) ([79e5597](https://github.com/yggdrion/shelly-exporter/commit/79e559750ec2cc65d8e75202965dd40cd3e2af1d))
+
 ## [1.1.1](https://github.com/yggdrion/shelly-exporter/compare/v1.1.0...v1.1.1) (2025-11-30)
 
 ### Bug Fixes
