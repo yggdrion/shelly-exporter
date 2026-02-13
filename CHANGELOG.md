@@ -1,3 +1,15 @@
+## [1.1.3](https://github.com/yggdrion/shelly-exporter/compare/v1.1.2...v1.1.3) (2026-02-13)
+
+### 🔧 Chores
+
+* **deps:** update alpine docker tag to v3.23 ([#21](https://github.com/yggdrion/shelly-exporter/issues/21)) ([5450a69](https://github.com/yggdrion/shelly-exporter/commit/5450a69ad38b1919438c1d6fef59746f505e4ae5))
+* **deps:** update golang docker tag to v1.26 ([#27](https://github.com/yggdrion/shelly-exporter/issues/27)) ([edf1fb7](https://github.com/yggdrion/shelly-exporter/commit/edf1fb74480b0726a8d5bc97d8c8a4957716f326))
+* **github-actions:** Update crate-ci/typos action to v1.42.0 ([#24](https://github.com/yggdrion/shelly-exporter/issues/24)) ([1d434ae](https://github.com/yggdrion/shelly-exporter/commit/1d434ae0ea841e340e5dd94c0abf9c67a7641b28))
+* **github-actions:** Update docker/setup-buildx-action action to v3.12.0 ([#23](https://github.com/yggdrion/shelly-exporter/issues/23)) ([c284c84](https://github.com/yggdrion/shelly-exporter/commit/c284c84a421961e25ec55a66d23ef9023ab9cc68))
+* **github-actions:** Update github-actions ([#22](https://github.com/yggdrion/shelly-exporter/issues/22)) ([6a88948](https://github.com/yggdrion/shelly-exporter/commit/6a88948691d2660d5361424c1a99a41db0883a8a))
+* **github-actions:** Update github-actions ([#25](https://github.com/yggdrion/shelly-exporter/issues/25)) ([fff3893](https://github.com/yggdrion/shelly-exporter/commit/fff3893009b7a98c3990f7009107d5866861b5fa))
+* **github-actions:** Update github-actions ([#26](https://github.com/yggdrion/shelly-exporter/issues/26)) ([f017068](https://github.com/yggdrion/shelly-exporter/commit/f017068869480ff0af13883f0b4485d345712923))
+
 ## [1.1.2](https://github.com/yggdrion/shelly-exporter/compare/v1.1.1...v1.1.2) (2025-12-02)
 
 ### 🐛 Bug Fixes
