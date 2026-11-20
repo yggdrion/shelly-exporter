@@ -155,11 +155,24 @@ func (e *ShellyExporter) discoverDevices(ctx context.Context) {
 			if device := e.discoverShellyDevice(ipAddr); device != nil {
 				e.devicesMutex.Lock()
 				if existing, exists := e.knownDevices[device.IP]; exists {
-					// Update existing device
-					existing.DeviceName = device.DeviceName
+					// Update existing device. Never regress a real name to the
+					// deviceID fallback (used when /settings fails or times out).
+					oldName := existing.DeviceName
+					if device.DeviceName != device.DeviceID || oldName == "" {
+						existing.DeviceName = device.DeviceName
+					}
 					existing.DeviceType = device.DeviceType
 					existing.LastSeen = device.LastSeen
+					newName := existing.DeviceName
 					e.devicesMutex.Unlock()
+					if newName != oldName {
+						// Drop series carrying the old name label so it doesn't linger.
+						e.mutex.Lock()
+						e.powerGauge.DeleteLabelValues(device.DeviceID, oldName, device.DeviceType, device.IP)
+						e.onlineGauge.DeleteLabelValues(device.DeviceID, oldName, device.DeviceType, device.IP)
+						e.relayGauge.DeleteLabelValues(device.DeviceID, oldName, device.DeviceType, device.IP)
+						e.mutex.Unlock()
+					}
 					countMutex.Lock()
 					updatedDevices++
 					countMutex.Unlock()
