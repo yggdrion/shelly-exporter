@@ -28,7 +28,7 @@ jobs:
 
       - name: Install semantic-release and plugins 📦
         run: |
-          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github conventional-changelog-conventionalcommits semantic-release-export-data
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github conventional-changelog-conventionalcommits@9 semantic-release-export-data
 
       - name: Get next version from semantic-release 🏷️
         id: get_version
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install semantic-release and plugins 📦
         run: |
-          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github conventional-changelog-conventionalcommits semantic-release-export-data
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github conventional-changelog-conventionalcommits@9 semantic-release-export-data
 
       - name: Run semantic-release 🚀
         env:
