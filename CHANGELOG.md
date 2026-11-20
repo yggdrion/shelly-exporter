@@ -1,3 +1,18 @@
+## [1.1.4](https://github.com/yggdrion/shelly-exporter/compare/v1.1.3...v1.1.4) (2026-11-20)
+
+### 🐛 Bug Fixes
+
+* **ci:** pin conventionalcommits preset to v9 for release notes ([#34](https://github.com/yggdrion/shelly-exporter/issues/34)) ([5461b2f](https://github.com/yggdrion/shelly-exporter/commit/5461b2f2957639b55f0c6ea01542998201482937))
+* **exporter:** stop duplicate metric series from device_name flapping ([#33](https://github.com/yggdrion/shelly-exporter/issues/33)) ([3941fc4](https://github.com/yggdrion/shelly-exporter/commit/3941fc4bda9796424c8944357cd12ea8c89be6fc))
+
+### 🔧 Chores
+
+* **deps:** update alpine docker tag to v3.24 ([#30](https://github.com/yggdrion/shelly-exporter/issues/30)) ([51aae86](https://github.com/yggdrion/shelly-exporter/commit/51aae86a37027edc9a0fd45ed64a1345d114d310))
+* **deps:** update golang docker tag to v1.27 ([#32](https://github.com/yggdrion/shelly-exporter/issues/32)) ([a746ba5](https://github.com/yggdrion/shelly-exporter/commit/a746ba59370fdf0f8be6f0e8eca419b1c0cc9714))
+* **github-actions:** Update github-actions ([#28](https://github.com/yggdrion/shelly-exporter/issues/28)) ([abfd1da](https://github.com/yggdrion/shelly-exporter/commit/abfd1da22d7072a69b3674b82a765d8fe88e774d))
+* **github-actions:** Update github-actions ([#29](https://github.com/yggdrion/shelly-exporter/issues/29)) ([f065485](https://github.com/yggdrion/shelly-exporter/commit/f06548581518d79d93864d006ced2144bc06196f))
+* **go:** Update module github.com/prometheus/client_golang to v1.25.0 ([#31](https://github.com/yggdrion/shelly-exporter/issues/31)) ([4081fb3](https://github.com/yggdrion/shelly-exporter/commit/4081fb327f76c3be1e0436769586233c3a5fb78e))
+
 ## [1.1.3](https://github.com/yggdrion/shelly-exporter/compare/v1.1.2...v1.1.3) (2026-02-13)
 
 ### 🔧 Chores
